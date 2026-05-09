@@ -16,6 +16,7 @@ body {
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
+  color: white;
   
 }
 
@@ -39,6 +40,7 @@ h1 {
 
 .game-selector button:hover {
   transform: scale(1.05);
+  background: gray ;
 }
 
 .hand-display {
@@ -85,9 +87,12 @@ h1 {
 
 .card-buttons {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  grid-template-columns: repeat(8, 70px);  
   gap: 0.75rem;
   margin-bottom: 2rem;
+  justify-content: center;
+  overflow-x: auto;  
+  padding: 0.5rem;
 }
 
 .card-btn {
@@ -99,10 +104,12 @@ h1 {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
+  width: 70px;  
+  text-align: center;
 }
 
 .card-btn:hover {
-  background: #ffed4a;
+  background: gray;
   transform: translateY(-2px);
 }
 
@@ -112,7 +119,7 @@ h1 {
 }
 
 .controls button {
-  background: #dc3545;
+  background: #28a745;
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -122,16 +129,17 @@ h1 {
 }
 
 .controls button:first-child {
-  background: #28a745;
+  background: #dc3545;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
   .card-buttons {
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    grid-template-columns: repeat(6, 60px);
   }
   
   .card-btn {
-    padding: 0.5rem;
+    width: 60px;
+    /* padding: 0.5rem; */
     font-size: 0.9rem;
   }
   

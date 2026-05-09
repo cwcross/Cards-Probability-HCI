@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { startNewGame, drawCard, resetGame } from './services/api';
 import MobileLayout from './components/MobileLayout';
 import VisualInterface from './components/VisualInterface';
@@ -11,6 +11,72 @@ function App() {
   const [bustProb, setBustProb] = useState(0);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      const key = e.key.toUpperCase();
+      
+      // Only work if a game is active
+      if (!gameType) return;
+      
+      // Flip7: Number keys 0-9, 1-2 for 10-12
+      if (gameType === 'flip7') {
+        if (key === '0') handleDrawCard('0');
+        if (key === '1') handleDrawCard('1');
+        if (key === '2') handleDrawCard('2');
+        if (key === '3') handleDrawCard('3');
+        if (key === '4') handleDrawCard('4');
+        if (key === '5') handleDrawCard('5');
+        if (key === '6') handleDrawCard('6');
+        if (key === '7') handleDrawCard('7');
+        if (key === '8') handleDrawCard('8');
+        if (key === '9') handleDrawCard('9');
+        if (key === 'Q') handleDrawCard('10');  // Q for 10
+        if (key === 'W') handleDrawCard('11');  // W for 11
+        if (key === 'E') handleDrawCard('12');  // E for 12
+        if (key === 'F') handleDrawCard('f3');
+        if (key === 'C') handleDrawCard('2c');
+        if (key === 'X') handleDrawCard('+x');
+        if (key === 'M') handleDrawCard('x2');   // M for multiply
+        if (key === 'V') handleDrawCard('fr');   // V for FR
+      }
+      
+      // Blackjack: Letter keys for face cards
+      if (gameType === 'blackjack') {
+        if (key === '2') handleDrawCard('2');
+        if (key === '3') handleDrawCard('3');
+        if (key === '4') handleDrawCard('4');
+        if (key === '5') handleDrawCard('5');
+        if (key === '6') handleDrawCard('6');
+        if (key === '7') handleDrawCard('7');
+        if (key === '8') handleDrawCard('8');
+        if (key === '9') handleDrawCard('9');
+        if (key === '0' || key === 'T') handleDrawCard('10');  // T for Ten
+        if (key === 'J') handleDrawCard('J');
+        if (key === 'Q') handleDrawCard('Q');
+        if (key === 'K') handleDrawCard('K');
+        if (key === 'A') handleDrawCard('A');
+      }
+      
+      // Common shortcuts (Ctrl + key)
+      if (e.ctrlKey && key === 'R') {
+        e.preventDefault();
+        handleReset();
+      }
+      if (e.ctrlKey && key === 'G') {
+        e.preventDefault();
+        handleChangeGame();
+      }
+      
+      // Escape key to go back to game select
+      if (key === 'ESCAPE') {
+        handleChangeGame();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [gameType, hand, loading]); // Re-run when gameType changes
+
   const startGame = async (type) => {
     setLoading(true);
     await startNewGame(type);
@@ -21,6 +87,10 @@ function App() {
   };
 
   const handleDrawCard = async (card) => {
+    if (gameType === 'flip7' && hand.includes(card)) {
+    alert(`⚠️ Card "${card}" is already in your hand! Flip7 doesn't allow duplicate number cards.`);
+    return;
+    }
     setLoading(true);
     try {
       const result = await drawCard(card);
@@ -50,6 +120,7 @@ function App() {
   const flip7Cards = ['0','1','2','3','4','5','6','7','8','9','10','11','12','f3','2c','+x','x2','fr'];
   const blackjackCards = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
+  
   // ========== GAME SELECTOR SCREEN (shown before game is chosen) ==========
   if (!gameType) {
     return (
@@ -138,6 +209,11 @@ function App() {
         {loading && <p>Loading...</p>}
       </div>
     );
+        <div className="keyboard-hint">
+          💡 Keyboard shortcuts: 
+          {gameType === 'flip7' ? 'Number keys (0-9), F= f3, C=2c, X=+x, M=x2, V=fr' : 
+   'Number keys (2-9), J, Q, K, A | Ctrl+R=Reset, Ctrl+G=Change Game, ESC=Exit'}
+</div>
   }
 
   // ========== MOBILE INTERFACE (Bottom Sheet) ==========

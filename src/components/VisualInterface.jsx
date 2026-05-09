@@ -116,7 +116,10 @@ function VisualInterface({ gameType, hand, bustProb, loading, onDrawCard, onRese
             </div>
           </div>
         )}
-      </div>
+        <div className="keyboard-hint" style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.8rem', opacity: 0.7 }}>
+            💡 Keyboard shortcuts active! Try pressing number keys or letters for cards.
+        </div>
+      </div>122
 
       {/* Loading Overlay */}
       {loading && (

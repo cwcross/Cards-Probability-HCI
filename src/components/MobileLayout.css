@@ -163,7 +163,7 @@
 
 .mobile-card-btn:active {
   transform: scale(0.96);
-  background: #ffed4a;
+  background: gray;
 }
 
 .mobile-card-btn:disabled {
