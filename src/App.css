@@ -113,6 +113,11 @@ h1 {
   transform: translateY(-2px);
 }
 
+.duplicate-badge {
+  margin-left: 4px;
+  font-size: 0.7rem;
+}
+
 .card-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -147,4 +152,39 @@ h1 {
     font-size: 1.8rem;
     
   }
+  .blackjack-mode-selector {
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+
+.mode-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  background: #333;
+  color: white;
+}
+
+.mode-btn.active {
+  background: #ffd700;
+  color: #1a472a;
+  font-weight: bold;
+}
+
+.mode-status {
+  text-align: center;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
 }

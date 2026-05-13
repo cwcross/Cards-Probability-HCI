@@ -1,20 +1,4 @@
 function VisualHand({ hand }) {
-  // Fan out the cards like a real hand
-  const getCardStyle = (index, total) => {
-    // Creates a fan effect
-    const fanAngle = 15; // degrees
-    const offset = (index - (total - 1) / 2) * fanAngle;
-    const translateX = (index - (total - 1) / 2) * 3;
-    const translateY = Math.abs(index - (total - 1) / 2) * -2;
-    
-    return {
-      transform: `rotate(${offset}deg) translateX(${translateX}px) translateY(${translateY}px)`,
-      zIndex: index,
-      left: `${50 + (index - (total - 1) / 2) * 8}%`,
-      position: 'relative'
-    };
-  };
-
   const getDisplayValue = (card) => {
     const mapping = {
       'f3': 'F3', '2c': '2C', '+x': '+X', 'x2': '×2', 'fr': 'FR',
@@ -23,26 +7,37 @@ function VisualHand({ hand }) {
     return mapping[card] || card;
   };
 
+  const getCardColor = (card) => {
+    const specialCards = ['f3', '2c', '+x', 'x2', 'fr'];
+    if (specialCards.includes(card)) return '#9b59b6';
+    if (['J','Q','K','A'].includes(card)) return '#e74c3c';
+    return '#ffffff';
+  };
+
   if (hand.length === 0) {
     return (
       <div className="empty-hand-visual">
         <div className="card-placeholder">🎴</div>
-        <p>Your hand is empty. Select cards from below!</p>
+        <p>Your hand is empty</p>
       </div>
     );
   }
 
   return (
     <div className="visual-hand-container">
-      <div className="hand-fan">
+      <div className="hand-grid">
         {hand.map((card, index) => (
           <div 
             key={index} 
-            className="hand-card"
-            style={getCardStyle(index, hand.length)}
+            className="hand-card-item"
+            style={{
+              backgroundColor: getCardColor(card),
+            }}
           >
-            <div className="hand-card-inner">
-              <div className="hand-card-value">{getDisplayValue(card)}</div>
+            <div className="hand-card-value" style={{
+              color: getCardColor(card) === '#ffffff' ? '#000' : '#fff'
+            }}>
+              {getDisplayValue(card)}
             </div>
           </div>
         ))}

@@ -45,3 +45,8 @@ export const setDealerCard = async (card) => {
   });
   return response.data;
 };
+
+export const getDealerCard = async () => {
+  const state = await getGameState();
+  return state.dealer_card || null;
+};

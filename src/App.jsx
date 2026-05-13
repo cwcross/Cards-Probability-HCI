@@ -1,104 +1,78 @@
 import { useState, useEffect } from 'react';
-import { startNewGame, drawCard, resetGame } from './services/api';
+import { startNewGame, drawCard, resetGame, setDealerCard, getGameState } from './services/api';
 import MobileLayout from './components/MobileLayout';
 import VisualInterface from './components/VisualInterface';
+import BlackjackInterface from './components/BlackjackInterface';
 import './App.css';
 
 function App() {
-  const [interfaceType, setInterfaceType] = useState('desktop'); // 'desktop', 'mobile', or 'visual'
+  const [interfaceType, setInterfaceType] = useState('desktop');
   const [gameType, setGameType] = useState(null);
   const [hand, setHand] = useState([]);
+  const [dealerCard, setDealerCardState] = useState(null);
   const [bustProb, setBustProb] = useState(0);
+  const [recommendation, setRecommendation] = useState('');
+  const [playerValue, setPlayerValue] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      const key = e.key.toUpperCase();
-      
-      // Only work if a game is active
-      if (!gameType) return;
-      
-      // Flip7: Number keys 0-9, 1-2 for 10-12
-      if (gameType === 'flip7') {
-        if (key === '0') handleDrawCard('0');
-        if (key === '1') handleDrawCard('1');
-        if (key === '2') handleDrawCard('2');
-        if (key === '3') handleDrawCard('3');
-        if (key === '4') handleDrawCard('4');
-        if (key === '5') handleDrawCard('5');
-        if (key === '6') handleDrawCard('6');
-        if (key === '7') handleDrawCard('7');
-        if (key === '8') handleDrawCard('8');
-        if (key === '9') handleDrawCard('9');
-        if (key === 'Q') handleDrawCard('10');  // Q for 10
-        if (key === 'W') handleDrawCard('11');  // W for 11
-        if (key === 'E') handleDrawCard('12');  // E for 12
-        if (key === 'F') handleDrawCard('f3');
-        if (key === 'C') handleDrawCard('2c');
-        if (key === 'X') handleDrawCard('+x');
-        if (key === 'M') handleDrawCard('x2');   // M for multiply
-        if (key === 'V') handleDrawCard('fr');   // V for FR
-      }
-      
-      // Blackjack: Letter keys for face cards
-      if (gameType === 'blackjack') {
-        if (key === '2') handleDrawCard('2');
-        if (key === '3') handleDrawCard('3');
-        if (key === '4') handleDrawCard('4');
-        if (key === '5') handleDrawCard('5');
-        if (key === '6') handleDrawCard('6');
-        if (key === '7') handleDrawCard('7');
-        if (key === '8') handleDrawCard('8');
-        if (key === '9') handleDrawCard('9');
-        if (key === '0' || key === 'T') handleDrawCard('10');  // T for Ten
-        if (key === 'J') handleDrawCard('J');
-        if (key === 'Q') handleDrawCard('Q');
-        if (key === 'K') handleDrawCard('K');
-        if (key === 'A') handleDrawCard('A');
-      }
-      
-      // Common shortcuts (Ctrl + key)
-      if (e.ctrlKey && key === 'R') {
-        e.preventDefault();
-        handleReset();
-      }
-      if (e.ctrlKey && key === 'G') {
-        e.preventDefault();
-        handleChangeGame();
-      }
-      
-      // Escape key to go back to game select
-      if (key === 'ESCAPE') {
-        handleChangeGame();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [gameType, hand, loading]); // Re-run when gameType changes
+  // Fetch full game state (for dealer card)
+  const fetchGameState = async () => {
+    try {
+      const state = await getGameState();
+      if (state.dealer_card) setDealerCardState(state.dealer_card);
+      if (state.recommendation) setRecommendation(state.recommendation);
+      if (state.player_value) setPlayerValue(state.player_value);
+      if (state.bust_probability !== undefined) setBustProb(state.bust_probability);
+    } catch (error) {
+      console.error('Error fetching game state:', error);
+    }
+  };
 
   const startGame = async (type) => {
     setLoading(true);
     await startNewGame(type);
     setGameType(type);
     setHand([]);
+    setDealerCardState(null);
     setBustProb(0);
+    setRecommendation('');
+    setPlayerValue(0);
     setLoading(false);
   };
 
   const handleDrawCard = async (card) => {
-    if (gameType === 'flip7' && hand.includes(card)) {
-    alert(`⚠️ Card "${card}" is already in your hand! Flip7 doesn't allow duplicate number cards.`);
-    return;
+    // Flip7 duplicate check
+    if (gameType === 'flip7') {
+      const specialCards = ['f3', '2c', '+x', 'x2', 'fr'];
+      if (!specialCards.includes(card) && hand.includes(card)) {
+        alert(`⚠️ Card "${card}" is already in your hand! You busted!`);
+        return;
+      }
     }
+    
     setLoading(true);
     try {
       const result = await drawCard(card);
       setHand(result.hand || []);
       setBustProb(result.bust_probability || 0);
+      await fetchGameState();
     } catch (error) {
       console.error('Error drawing card:', error);
       alert('Failed to draw card. Make sure Flask backend is running on port 5000');
+    }
+    setLoading(false);
+  };
+
+  const handleSetDealerCard = async (card) => {
+    setLoading(true);
+    try {
+      await setDealerCard(card);
+      setDealerCardState(card);
+      await fetchGameState();
+      alert(`Dealer's up card set to: ${card}`);
+    } catch (error) {
+      console.error('Error setting dealer card:', error);
+      alert('Failed to set dealer card');
     }
     setLoading(false);
   };
@@ -107,48 +81,34 @@ function App() {
     setLoading(true);
     await resetGame();
     setHand([]);
+    setDealerCardState(null);
     setBustProb(0);
+    setRecommendation('');
+    setPlayerValue(0);
     setLoading(false);
   };
 
   const handleChangeGame = () => {
     setGameType(null);
     setHand([]);
+    setDealerCardState(null);
     setBustProb(0);
+    setRecommendation('');
+    setPlayerValue(0);
   };
 
   const flip7Cards = ['0','1','2','3','4','5','6','7','8','9','10','11','12','f3','2c','+x','x2','fr'];
-  const blackjackCards = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
-  
-  // ========== GAME SELECTOR SCREEN (shown before game is chosen) ==========
+  // Game Selector
   if (!gameType) {
     return (
       <div className="game-selector">
         <h1>🎴 Card Game Probability Calculator</h1>
-        
-        {/* Interface Switcher - Choose which UI to use */}
         <div className="interface-switcher">
-          <button 
-            className={interfaceType === 'desktop' ? 'active' : ''} 
-            onClick={() => setInterfaceType('desktop')}
-          >
-            🖥️ Desktop View
-          </button>
-          <button 
-            className={interfaceType === 'mobile' ? 'active' : ''} 
-            onClick={() => setInterfaceType('mobile')}
-          >
-            📱 Mobile View
-          </button>
-          <button 
-            className={interfaceType === 'visual' ? 'active' : ''} 
-            onClick={() => setInterfaceType('visual')}
-          >
-            🃏 Visual Cards View
-          </button>
+          <button className={interfaceType === 'desktop' ? 'active' : ''} onClick={() => setInterfaceType('desktop')}>🖥️ Desktop View</button>
+          <button className={interfaceType === 'mobile' ? 'active' : ''} onClick={() => setInterfaceType('mobile')}>📱 Mobile View</button>
+          <button className={interfaceType === 'visual' ? 'active' : ''} onClick={() => setInterfaceType('visual')}>🃏 Visual Cards View</button>
         </div>
-        
         <div className="game-buttons">
           <button onClick={() => startGame('flip7')}>🃟 Play Flip7</button>
           <button onClick={() => startGame('blackjack')}>♠️ Play Blackjack</button>
@@ -157,18 +117,36 @@ function App() {
     );
   }
 
-  // ========== DESKTOP INTERFACE ==========
-  if (interfaceType === 'desktop') {
-    const cards = gameType === 'flip7' ? flip7Cards : blackjackCards;
+  // Blackjack uses special interface
+  if (gameType === 'blackjack' && interfaceType === 'desktop') {
+    return (
+      <BlackjackInterface
+        playerHand={hand}
+        dealerCard={dealerCard}
+        bustProb={bustProb}
+        recommendation={recommendation}
+        playerValue={playerValue}
+        loading={loading}
+        onDrawCard={handleDrawCard}
+        onSetDealerCard={handleSetDealerCard}
+        onReset={handleReset}
+        onChangeGame={handleChangeGame}
+      />
+    );
+  }
+
+  // Flip7 Desktop Interface
+  if (interfaceType === 'desktop' && gameType === 'flip7') {
+    const specialCards = ['f3', '2c', '+x', 'x2', 'fr'];
     return (
       <div className="game-container">
         <div className="interface-indicator">
-          <span>🖥️ Desktop Interface</span>
+          <span>🖥️ Desktop Interface - Flip7</span>
           <button onClick={() => setInterfaceType('mobile')}>Switch to Mobile</button>
           <button onClick={() => setInterfaceType('visual')}>Switch to Visual Cards</button>
         </div>
         
-        <h1>{gameType === 'flip7' ? 'Flip7' : 'Blackjack'}</h1>
+        <h1>Flip7</h1>
         
         <div className="hand-display">
           <h2>Your Hand:</h2>
@@ -189,16 +167,24 @@ function App() {
         </div>
 
         <div className="card-buttons">
-          {cards.map(card => (
-            <button 
-              key={card} 
-              onClick={() => handleDrawCard(card)}
-              disabled={loading}
-              className="card-btn"
-            >
-              {card}
-            </button>
-          ))}
+          {flip7Cards.map(card => {
+            const isDuplicate = hand.includes(card) && !specialCards.includes(card);
+            return (
+              <button 
+                key={card} 
+                onClick={() => handleDrawCard(card)}
+                disabled={loading || isDuplicate}
+                className="card-btn"
+                style={{
+                  backgroundColor: isDuplicate ? '#dc3545' : '#ffd700',
+                  color: isDuplicate ? 'white' : '#1a472a'
+                }}
+                title={isDuplicate ? "Already in hand - drawing this will bust!" : "Draw this card"}
+              >
+                {card}
+              </button>
+            );
+          })}
         </div>
 
         <div className="controls">
@@ -206,17 +192,15 @@ function App() {
           <button onClick={handleChangeGame}>Change Game</button>
         </div>
 
+        <div className="keyboard-hint">
+          💡 Keyboard shortcuts: Number keys (0-9), F=f3, C=2c, X=+x, M=x2, V=fr | Ctrl+R=Reset, ESC=Exit
+        </div>
+
         {loading && <p>Loading...</p>}
       </div>
     );
-        <div className="keyboard-hint">
-          💡 Keyboard shortcuts: 
-          {gameType === 'flip7' ? 'Number keys (0-9), F= f3, C=2c, X=+x, M=x2, V=fr' : 
-   'Number keys (2-9), J, Q, K, A | Ctrl+R=Reset, Ctrl+G=Change Game, ESC=Exit'}
-</div>
   }
 
-  // ========== MOBILE INTERFACE (Bottom Sheet) ==========
   if (interfaceType === 'mobile') {
     return (
       <MobileLayout
@@ -227,21 +211,27 @@ function App() {
         onDrawCard={handleDrawCard}
         onReset={handleReset}
         onChangeGame={handleChangeGame}
+        onSetDealerCard={handleSetDealerCard}  
+        dealerCard={dealerCard}                
+        recommendation={recommendation}        
       />
     );
   }
 
-  // ========== VISUAL CARDS INTERFACE (Fan Spread + Real Cards) ==========
+  // Visual Interface
   return (
-    <VisualInterface
-      gameType={gameType}
-      hand={hand}
-      bustProb={bustProb}
-      loading={loading}
-      onDrawCard={handleDrawCard}
-      onReset={handleReset}
-      onChangeGame={handleChangeGame}
-    />
+  <VisualInterface
+    gameType={gameType}
+    hand={hand}
+    bustProb={bustProb}
+    loading={loading}
+    onDrawCard={handleDrawCard}
+    onReset={handleReset}
+    onChangeGame={handleChangeGame}
+    onSetDealerCard={handleSetDealerCard}  
+    dealerCard={dealerCard}                
+    recommendation={recommendation}        
+  />
   );
 }
 
